@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     )
     primary_generative_model = get_primary_generative_model(GENERATIVE_MODEL_NAME, PROJECT_ENDPOINT, token_provider)
     app.state.primary_generative_model = primary_generative_model
-    requirements_analytics_agent = get_requirements_analytics_agent
+    requirements_analytics_agent = get_requirements_analytics_agent(primary_generative_model, BUSINESS_REQUIREMENTS_SYSTEM_PROMPT)
     app.state.requirements_analytics_agent = requirements_analytics_agent
     yield
 
@@ -40,13 +40,14 @@ app = FastAPI(title="AI-SEA", lifespan=lifespan)
 def health():
     return {"status": "ok"}
 
-@app.get("/analyze_requirements")
+@app.post("/analyze_requirements")
 def analyze_requirements(req: FeatureRequest):
     result = app.state.requirements_analytics_agent.invoke({
         "messages": [
-            {"role": "user", "content": BUSINESS_REQUIREMENTS_SYSTEM_PROMPT}
+            {"role": "user", "content": req.description}
         ]
     })
 
-    structured_response = result["structured_response"]
-    return structured_response
+    message = result['messages'][1]
+    content = message.content[1]
+    return content['text']
