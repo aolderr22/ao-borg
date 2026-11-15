@@ -20,17 +20,23 @@ def _name(node) -> str:
 def chunk_file(path: Path, root: Path) -> list[Document]:
     source = path.read_bytes()
     rel = str(path.relative_to(root))
-    docs = []
+    docs, leftover = [], []
     for node in _parser.parse(source).root_node.children:
+        text = source[node.start_byte:node.end_byte].decode("utf-8", "replace")
         if node.type in DEF_TYPES:
             docs.append(Document(
-                page_content=source[node.start_byte:node.end_byte].decode("utf-8", "replace"),
+                page_content=text,
                 metadata={"path": rel, "symbol": _name(node),
                           "start_line": node.start_point[0] + 1,
                           "end_line": node.end_point[0] + 1},
             ))
-    if not docs and source.strip():  # scripts with no top-level definitions
-        docs.append(Document(page_content=source.decode("utf-8", "replace")[:4000],
-                             metadata={"path": rel, "symbol": "<module>",
-                                       "start_line": 1, "end_line": source.count(b"\n") + 1}))
+        else:
+            leftover.append(text)
+    module_text = "\n".join(leftover).strip()
+    if module_text:
+        docs.append(Document(
+            page_content=module_text[:4000],
+            metadata={"path": rel, "symbol": "<module>",
+                      "start_line": 1, "end_line": source.count(b"\n") + 1},
+        ))
     return docs

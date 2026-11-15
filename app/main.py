@@ -1,11 +1,9 @@
 import logging
-import uuid
 import os
 from azure.identity import (DefaultAzureCredential, get_bearer_token_provider)
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from pathlib import Path
-from fastapi import (FastAPI, HTTPException)
+from fastapi import FastAPI
 from app.agents import get_requirements_analytics_agent
 from app.llm_provider import get_primary_generative_model
 from app.logging_setup import setup_logging
